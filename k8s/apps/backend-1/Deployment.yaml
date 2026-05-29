@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: backend-1
-        image: backend1:latest
-        imagePullPolicy: IfNotPresent
+        image: rpm2004/backend-1:latest
+        imagePullPolicy: Always
         ports:
           - containerPort: 3000
         envFrom:
