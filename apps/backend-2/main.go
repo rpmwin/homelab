@@ -89,7 +89,7 @@ func main() {
 
 	mux.HandleFunc("/", basefunc)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Backend 2 is healthy")
+		fmt.Fprintf(w, "Backend 2 is healthy!!")
 	})
 	mux.HandleFunc("/test", connectb1)
 	mux.HandleFunc("/backend1", connectb1)
