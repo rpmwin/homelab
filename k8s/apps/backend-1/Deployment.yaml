@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-1
+  labels:
+    app: backend-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-1
+  template:
+    metadata:
+      labels:
+        app: backend-1
+    spec:
+      containers:
+      - name: backend-1
+        image: backend1:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: backend-config
+
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10

@@ -1,0 +1,17 @@
+FROM golang:latest AS builder
+
+WORKDIR /app
+
+COPY . . 
+
+RUN go mod tidy \
+  && CGO_ENABLED=0 go build -o main . \
+  && chmod +x main
+
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/main /app/main
+
+ENTRYPOINT ["./main"]

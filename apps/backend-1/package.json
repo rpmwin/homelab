@@ -1,0 +1,27 @@
+{
+  "name": "backend-1",
+  "module": "index.ts",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "build": "tsc --outDir dist",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node src/index.ts' --ext ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "ts-node": "^10.9.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "nodejs": "^0.0.0",
+    "nodemon": "^3.1.14",
+    "prom-client": "^15.1.3"
+  }
+}
