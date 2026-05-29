@@ -37,6 +37,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_S }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push backend-1
         uses: docker/build-push-action@v5
         with:
@@ -46,6 +49,8 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/backend-1:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/backend-1:${{ github.sha }}
+          cache-from: type=gha,scope=backend-1
+          cache-to: type=gha,scope=backend-1,mode=max
 
   backend-2:
     name: Build & Push backend-2
@@ -61,6 +66,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_S }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push backend-2
         uses: docker/build-push-action@v5
         with:
@@ -70,3 +78,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/backend-2:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/backend-2:${{ github.sha }}
+          cache-from: type=gha,scope=backend-2
+          cache-to: type=gha,scope=backend-2,mode=max
