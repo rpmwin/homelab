@@ -18,6 +18,7 @@ Self-hosted *arr + Jellyfin media stack on this k3s homelab. Streaming-first.
 | [`09-troubleshooting.md`](09-troubleshooting.md) | Real issues hit during rollout + fixes (DNS, LE certs, Cloudflare). |
 | [`10-app-setup.md`](10-app-setup.md) | UI configuration walkthrough for every app (Prowlarr, qBit, Sonarr, etc.). |
 | [`research-indexers-2026.md`](research-indexers-2026.md) | Curated indexer/proxy research for 2025-2026. |
+| [`STATUS.md`](STATUS.md) | **Live snapshot** — current build state, pods, certs, commits, what's next. |
 
 ## Target architecture (TL;DR)
 
