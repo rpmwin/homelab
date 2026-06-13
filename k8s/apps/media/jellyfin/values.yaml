@@ -67,6 +67,9 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - hosts:
+          - jellyfin.home.iamrpm.xyz
 
 persistence:
   config:

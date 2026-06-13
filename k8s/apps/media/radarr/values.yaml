@@ -58,6 +58,9 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - hosts:
+          - radarr.home.iamrpm.xyz
 
 persistence:
   config:

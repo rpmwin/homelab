@@ -64,6 +64,9 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - hosts:
+          - qbit.home.iamrpm.xyz
 
 persistence:
   config:

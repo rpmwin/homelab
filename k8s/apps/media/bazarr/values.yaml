@@ -50,6 +50,9 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - hosts:
+          - bazarr.home.iamrpm.xyz
 
 persistence:
   config:

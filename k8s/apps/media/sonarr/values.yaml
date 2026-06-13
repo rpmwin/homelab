@@ -58,6 +58,9 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - hosts:
+          - sonarr.home.iamrpm.xyz
 
 persistence:
   config:
