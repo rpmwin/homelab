@@ -105,6 +105,46 @@ For homelab clusters on flaky residential internet, never let CoreDNS auto-disco
 
 ---
 
+## 4a. Byparr `NS_ERROR_UNKNOWN_HOST` for every target site
+
+### Symptom
+After deploying Byparr, smoke test fails with `playwright._impl._errors.Error: Page.goto: NS_ERROR_UNKNOWN_HOST`. Prowlarr UI shows `Unable to access ..., blocked by CloudFlare Protection` (misleading — the real error is DNS).
+
+### Diagnosis
+1. CoreDNS upstream over Airtel UDP/53 was unreliable under Firefox's parallel DNS query load. Replaced with explicit upstream nameservers via `dnsPolicy: None`:
+   ```yaml
+   defaultPodOptions:
+     dnsPolicy: "None"
+     dnsConfig:
+       nameservers: [1.1.1.1, 8.8.8.8, 9.9.9.9]
+   ```
+
+2. But still failing — `getent hosts 1337x.to` returned only **IPv6** addresses (`2606:4700:...`). Pod has no IPv6 connectivity (k3s cluster is IPv4-only). Firefox tried IPv6 first, failed, reported as `UNKNOWN_HOST`.
+
+### Fix
+Add `no-aaaa` + `single-request-reopen` options to dnsConfig:
+```yaml
+defaultPodOptions:
+  dnsPolicy: "None"
+  dnsConfig:
+    nameservers: [1.1.1.1, 8.8.8.8, 9.9.9.9]
+    options:
+      - { name: ndots, value: "1" }
+      - { name: timeout, value: "2" }
+      - { name: attempts, value: "2" }
+      - { name: single-request-reopen }
+      - { name: no-aaaa }
+```
+
+After this, `getent hosts 1337x.to` returns only IPv4 (Cloudflare CDN IPs `172.67.188.67`, `104.21.40.193`). Byparr smoke test returns `"status":"ok","message":"Success"` with valid `cf_clearance` cookie.
+
+Commits `8a9b41e` (dnsPolicy:None) + `ae7fb6a` (no-aaaa).
+
+### Lesson
+IPv4-only clusters + dual-stack DNS responses = silent failures. Always set `no-aaaa` on pods that need to reach external dual-stack hosts. The `UNKNOWN_HOST` error is misleading — it's actually "host resolved but I picked an unreachable IP family."
+
+---
+
 ## 4. FlareSolverr can't bypass Cloudflare anymore
 
 ### Symptom
