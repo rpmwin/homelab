@@ -1,0 +1,96 @@
+controllers:
+  main:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/jellyfin
+          tag: latest
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+          JELLYFIN_PublishedServerUrl: https://jellyfin.home.iamrpm.xyz
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+        # Intel QSV disabled — i3-2120 is Sandy Bridge (Gen 2), no QSV encode support.
+        # Direct-play only. Target: H.264 + AAC + MP4/MKV + SRT.
+        # To enable QSV later (requires Gen 6+ iGPU):
+        #   limits:
+        #     gpu.intel.com/i915: 1
+        #   securityContext:
+        #     supplementalGroups: [105]   # render GID — verify: getent group render
+        # Also uncomment the dri persistence block below.
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8096
+              initialDelaySeconds: 60
+              periodSeconds: 30
+          readiness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8096
+              initialDelaySeconds: 30
+              periodSeconds: 15
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8096
+
+ingress:
+  main:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    hosts:
+      - host: jellyfin.home.iamrpm.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+
+persistence:
+  config:
+    type: hostPath
+    hostPath: /opt/media/config/jellyfin
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /config
+  cache:
+    type: hostPath
+    hostPath: /opt/media/cache/jellyfin
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /cache
+  media:
+    type: hostPath
+    hostPath: /data/media
+    hostPathType: Directory
+    globalMounts:
+      - path: /media
+        readOnly: true
+  # QSV: uncomment when upgrading to Gen 6+ hardware
+  # dri:
+  #   type: hostPath
+  #   hostPath: /dev/dri
+  #   globalMounts:
+  #     - path: /dev/dri

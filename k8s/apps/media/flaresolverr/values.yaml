@@ -1,0 +1,37 @@
+controllers:
+  main:
+    type: deployment
+    replicas: 1
+    containers:
+      main:
+        image:
+          repository: ghcr.io/flaresolverr/flaresolverr
+          tag: latest
+        env:
+          LOG_LEVEL: info
+          TZ: Asia/Kolkata
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            memory: 512Mi
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8191
+              initialDelaySeconds: 30
+              periodSeconds: 30
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8191
+
+# No ingress — ClusterIP only. Access via:
+# http://flaresolverr.media.svc.cluster.local:8191

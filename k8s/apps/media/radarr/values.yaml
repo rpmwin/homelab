@@ -1,0 +1,80 @@
+controllers:
+  main:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/radarr
+          tag: latest
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            memory: 768Mi
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /
+                port: 7878
+              initialDelaySeconds: 60
+              periodSeconds: 30
+          readiness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /
+                port: 7878
+              initialDelaySeconds: 30
+              periodSeconds: 15
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 7878
+
+ingress:
+  main:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    hosts:
+      - host: radarr.home.iamrpm.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+
+persistence:
+  config:
+    type: hostPath
+    hostPath: /opt/media/config/radarr
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /config
+  media:
+    type: hostPath
+    hostPath: /data/media
+    hostPathType: Directory
+    globalMounts:
+      - path: /media
+  downloads:
+    type: hostPath
+    hostPath: /data/downloads
+    hostPathType: Directory
+    globalMounts:
+      - path: /downloads

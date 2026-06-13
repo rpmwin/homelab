@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: media-setup-dirs
+  namespace: default
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: devbox
+      restartPolicy: Never
+      containers:
+      - name: setup
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          mkdir -p /opt-media/config/sonarr /opt-media/config/radarr /opt-media/config/prowlarr
+          mkdir -p /opt-media/config/bazarr /opt-media/config/qbittorrent /opt-media/config/jellyfin
+          mkdir -p /opt-media/config/flaresolverr /opt-media/config/mediafusion
+          mkdir -p /opt-media/cache/jellyfin
+          mkdir -p /opt-media/downloads-incomplete
+          chown -R 1000:1000 /opt-media
+          chmod -R 775 /opt-media
+          mkdir -p /data-mount/media/tv /data-mount/media/movies /data-mount/media/music
+          mkdir -p /data-mount/downloads/complete/tv /data-mount/downloads/complete/movies /data-mount/downloads/complete/music
+          chown -R 1000:1000 /data-mount/media /data-mount/downloads
+          chmod -R 775 /data-mount/media /data-mount/downloads
+          echo "=== SSD /opt/media ===" && ls -la /opt-media/config/
+          echo "=== HDD /data ===" && ls -la /data-mount/media/ && ls -la /data-mount/downloads/complete/
+          echo "DONE"
+        volumeMounts:
+        - name: opt-media
+          mountPath: /opt-media
+        - name: data-mount
+          mountPath: /data-mount
+      volumes:
+      - name: opt-media
+        hostPath:
+          path: /opt/media
+          type: DirectoryOrCreate
+      - name: data-mount
+        hostPath:
+          path: /data
+          type: Directory

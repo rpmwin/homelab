@@ -1,0 +1,86 @@
+controllers:
+  main:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: ghcr.io/hotio/qbittorrent
+          tag: release-5.0.4
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+          UMASK: "002"
+          WEBUI_PORTS: "8080/tcp,8080/udp"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /
+                port: 8080
+              initialDelaySeconds: 30
+              periodSeconds: 30
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8080
+  bittorrent:
+    controller: main
+    type: NodePort
+    ports:
+      bt-tcp:
+        port: 6881
+        protocol: TCP
+        nodePort: 30881
+      bt-udp:
+        port: 6881
+        protocol: UDP
+        nodePort: 30881
+
+ingress:
+  main:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    hosts:
+      - host: qbit.home.iamrpm.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+
+persistence:
+  config:
+    type: hostPath
+    hostPath: /opt/media/config/qbittorrent
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /config
+  downloads:
+    type: hostPath
+    hostPath: /data/downloads
+    hostPathType: Directory
+    globalMounts:
+      - path: /downloads
+  incomplete:
+    type: hostPath
+    hostPath: /opt/media/downloads-incomplete
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /downloads/incomplete

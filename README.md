@@ -33,3 +33,7 @@ homelab/
 | backend-2 | Go | 8080 | https://back2.home.iamrpm.xyz |
 
 Both services expose `/metrics` for Prometheus scraping.
+
+## Docs
+
+- [`docs/media-stack/`](docs/media-stack/README.md) — *arr + Jellyfin media stack plan (not yet deployed). Step-by-step rollout reference for executing the build.
