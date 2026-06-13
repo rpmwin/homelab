@@ -5,17 +5,19 @@ controllers:
     containers:
       main:
         image:
-          repository: ghcr.io/flaresolverr/flaresolverr
+          # Byparr — FlareSolverr replacement, handles current Cloudflare Turnstile.
+          # API-compatible with FlareSolverr (same port 8191, same JSON contract).
+          repository: ghcr.io/thephaseless/byparr
           tag: latest
         env:
           LOG_LEVEL: info
           TZ: Asia/Kolkata
         resources:
           requests:
-            cpu: 50m
-            memory: 256Mi
-          limits:
+            cpu: 100m
             memory: 512Mi
+          limits:
+            memory: 1Gi    # Chromium-based, heavier than FlareSolverr
         probes:
           liveness:
             enabled: true
@@ -23,8 +25,16 @@ controllers:
               httpGet:
                 path: /health
                 port: 8191
-              initialDelaySeconds: 30
+              initialDelaySeconds: 60
               periodSeconds: 30
+          readiness:
+            enabled: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8191
+              initialDelaySeconds: 30
+              periodSeconds: 15
 
 service:
   main:
