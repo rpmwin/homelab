@@ -17,6 +17,8 @@ defaultPodOptions:
         value: "2"
       - name: attempts
         value: "2"
+      - name: single-request-reopen   # serial A then AAAA queries, separate sockets
+      - name: no-aaaa                 # skip IPv6 lookups (cluster is IPv4-only)
 
 controllers:
   main:
