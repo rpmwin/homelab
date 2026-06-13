@@ -7,7 +7,7 @@ spec:
   goTemplate: false
   generators:
     - git:
-        repoURL: git@github.com:rpmwin/homelab.git
+        repoURL: https://github.com/rpmwin/homelab.git
         revision: main
         directories:
           - path: k8s/apps/media/*
@@ -29,7 +29,7 @@ spec:
             releaseName: '{{path.basename}}'
             valueFiles:
               - $values/{{path}}/values.yaml
-        - repoURL: git@github.com:rpmwin/homelab.git
+        - repoURL: https://github.com/rpmwin/homelab.git
           targetRevision: main
           ref: values
       destination:
