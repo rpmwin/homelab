@@ -22,6 +22,7 @@ controllers:
         probes:
           liveness:
             enabled: true
+            custom: true
             spec:
               httpGet:
                 path: /

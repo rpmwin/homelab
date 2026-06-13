@@ -31,6 +31,7 @@ controllers:
         probes:
           liveness:
             enabled: true
+            custom: true
             spec:
               httpGet:
                 path: /health
@@ -39,6 +40,7 @@ controllers:
               periodSeconds: 30
           readiness:
             enabled: true
+            custom: true
             spec:
               httpGet:
                 path: /health

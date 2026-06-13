@@ -22,14 +22,38 @@ controllers:
             cpu: 2000m
             memory: 2Gi
         probes:
+          # bjw-s v3 default probe targets the first declared port (6881/BT),
+          # which only binds when qBit has active torrents. On fresh install
+          # it never opens -> kubelet kills the pod every 2 min in a loop.
+          # Override with custom HTTP probe on the WebUI port 8080.
           liveness:
             enabled: true
+            custom: true
             spec:
               httpGet:
                 path: /
                 port: 8080
-              initialDelaySeconds: 30
+              initialDelaySeconds: 60
               periodSeconds: 30
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8080
+              initialDelaySeconds: 15
+              periodSeconds: 15
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 8080
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              failureThreshold: 30
 
 service:
   main:
