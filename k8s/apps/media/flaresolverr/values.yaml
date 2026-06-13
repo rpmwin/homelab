@@ -34,12 +34,17 @@ controllers:
         env:
           LOG_LEVEL: info
           TZ: Asia/Kolkata
+          # Bump max challenge time — Cloudflare Turnstile + slow CPU
+          # (Sandy Bridge i3-2120) needs more headroom than 60s default.
+          # Prowlarr's Indexer Proxy "Request Timeout" must be >= this.
+          TIMEOUT: "120000"
         resources:
           requests:
-            cpu: 100m
-            memory: 512Mi
+            cpu: 500m      # Chromium solving CF is CPU-bound on weak HW
+            memory: 768Mi
           limits:
-            memory: 1Gi    # Chromium-based, heavier than FlareSolverr
+            cpu: 3000m     # let it burst on cold solve
+            memory: 1500Mi
         probes:
           liveness:
             enabled: true
