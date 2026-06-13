@@ -15,10 +15,11 @@ controllers:
           JELLYFIN_PublishedServerUrl: https://jellyfin.home.iamrpm.xyz
         resources:
           requests:
-            cpu: 250m
-            memory: 512Mi
+            cpu: 500m
+            memory: 768Mi
           limits:
-            memory: 2Gi
+            cpu: 3000m
+            memory: 2500Mi
         # Intel QSV disabled — i3-2120 is Sandy Bridge (Gen 2), no QSV encode support.
         # Direct-play only. Target: H.264 + AAC + MP4/MKV + SRT.
         # To enable QSV later (requires Gen 6+ iGPU):

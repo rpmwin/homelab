@@ -14,10 +14,11 @@ controllers:
           TZ: Asia/Kolkata
         resources:
           requests:
-            cpu: 50m
-            memory: 128Mi
+            cpu: 150m
+            memory: 256Mi
           limits:
-            memory: 384Mi
+            cpu: 1500m
+            memory: 768Mi
         probes:
           liveness:
             enabled: true

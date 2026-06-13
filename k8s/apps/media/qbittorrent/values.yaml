@@ -16,10 +16,11 @@ controllers:
           WEBUI_PORTS: "8080/tcp,8080/udp"
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 300m
+            memory: 512Mi
           limits:
-            memory: 1Gi
+            cpu: 2000m
+            memory: 2Gi
         probes:
           liveness:
             enabled: true
