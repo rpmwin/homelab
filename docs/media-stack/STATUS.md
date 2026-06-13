@@ -54,7 +54,7 @@ All 6 subdomains serving valid Let's Encrypt certs:
 
 | App | UI auth set | Wired to deps | Test data added | Notes |
 |-----|-------------|---------------|-----------------|-------|
-| Prowlarr | partial | partial | — | Indexer-proxy "byparr" tag created. **Add CF-protected indexers with `flaresolverr` tag.** |
+| Prowlarr | partial | partial | — | Indexer-proxy "byparr" tag created. **Add CF-protected indexers with `flaresolverr` tag.** Byparr cold solve = ~35s, warm = ~14s. Set Indexer Proxy Request Timeout = 120s. |
 | qBittorrent | — | — | — | Get temp pwd from logs, set permanent, create `tv`/`movies` categories |
 | Sonarr | — | — | — | Wait until Prowlarr indexers are in |
 | Radarr | — | — | — | Mirror Sonarr |

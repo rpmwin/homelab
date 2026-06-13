@@ -145,6 +145,45 @@ IPv4-only clusters + dual-stack DNS responses = silent failures. Always set `no-
 
 ---
 
+## 4b. Byparr "Timed out while solving the challenge" on weak CPU
+
+### Symptom
+After DNS was fixed, Byparr would return 408 Request Timeout:
+```
+ERROR:    Timed out while solving the challenge
+WARNING:  Failed https://1337x.to/cat/Movies/1/ in 63.01s
+INFO:     POST /v1 HTTP/1.1 408 Request Timeout
+```
+Prowlarr shows: `Unable to connect to indexer, indexer's server is unavailable. Try again later. Http request timed out`.
+
+### Diagnosis
+`kubectl -n media top pod` showed Byparr using **2m CPU** during the solve. Cloudflare Turnstile is CPU-bound (Chromium runs heavy JS). The pod's CPU request was 100m and there was no limit set, but on Sandy Bridge i3-2120 (Gen 2 from 2011) the available CPU just wasn't enough to solve in time.
+
+### Fix
+Bumped resources + per-request timeout in `values.yaml`:
+```yaml
+resources:
+  requests:
+    cpu: 500m
+    memory: 768Mi
+  limits:
+    cpu: 3000m       # burst on cold solve
+    memory: 1500Mi
+env:
+  TIMEOUT: "120000"   # max solve time before Byparr gives up
+```
+
+After deploy: cold solve **~35s**, warm solve **~14s**. Reliable.
+
+Also raised Prowlarr's Indexer Proxy "Request Timeout" from 60s → 120s in UI.
+
+Commit `e622e23`.
+
+### Lesson
+Browser-based bypass (Playwright + Firefox) is genuinely CPU-heavy on weak homelab hardware. Default container resource defaults are way too low. Monitor with `kubectl top pod` during a solve — if CPU is pinned low, raise limits.
+
+---
+
 ## 4. FlareSolverr can't bypass Cloudflare anymore
 
 ### Symptom
