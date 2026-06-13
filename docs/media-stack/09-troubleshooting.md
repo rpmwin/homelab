@@ -145,6 +145,44 @@ IPv4-only clusters + dual-stack DNS responses = silent failures. Always set `no-
 
 ---
 
+## 3a. Indexer sites resolving IPv6-only (silent failure)
+
+### Symptom
+Prowlarr's "Test" on TPB, EZTV, LimeTorrents, Bitsearch all failing. Some indexers don't resolve at all (`yts.mx`). Pods can't reach sites that work fine in browser.
+
+### Diagnosis
+```bash
+kubectl -n media exec deploy/prowlarr -- getent hosts thepiratebay.org
+# 2606:4700:7::a29f:8906 thepiratebay.org   ← IPv6 ONLY
+```
+
+Cloudflare DNS returns AAAA-first for many torrent sites. Cluster is IPv4-only. Pods try IPv6, fail silently. Earlier Byparr-specific fix (no-aaaa in dnsConfig) only covered that one pod.
+
+Plus: Airtel's recursive DNS (or Cloudflare in IN region) NXDOMAINs sites with court orders (`yts.mx`, `limetorrents.lol` in some configs).
+
+### Fix — global no-AAAA via CoreDNS
+
+`k8s/_platform/coredns/coredns-custom-configmap.yaml`:
+```yaml
+data:
+  upstream.override: |
+    forward . 1.1.1.1 8.8.8.8 9.9.9.9 { prefer_udp; policy random; health_check 5s }
+  noaaaa.override: |
+    template ANY AAAA . {
+      rcode NOERROR
+      authority "{{ .Name }} 60 IN SOA ns.example.org admin.example.org. 2024010101 7200 3600 604800 60"
+    }
+```
+
+Apply + restart CoreDNS. All pods now get IPv4 only.
+
+After: TPB/EZTV/Nyaa/LimeTorrents/Bitsearch/1337x all resolve to IPv4. `yts.mx` still blocked by Cloudflare (court order, IN region) — workaround is mirror URL (`yts.am`, `yts.gs`, `yts.rs`) in indexer's Base URL field.
+
+### Lesson
+For IPv4-only homelab clusters, drop AAAA at the CoreDNS layer globally rather than per-pod. One config change fixes every workload. The previous per-pod `no-aaaa` in resolv.conf options only helps glibc-based apps; Firefox/Chromium do their own DNS path and ignore it.
+
+---
+
 ## 4b. Byparr "Timed out while solving the challenge" on weak CPU
 
 ### Symptom

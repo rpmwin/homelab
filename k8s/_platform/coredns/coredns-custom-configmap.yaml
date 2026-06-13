@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  # Pin upstream DNS to known-reliable resolvers. Airtel home DNS flakes
+  # under bursts and applies court-order filtering to some torrent sites.
+  upstream.override: |
+    forward . 1.1.1.1 8.8.8.8 9.9.9.9 {
+      prefer_udp
+      max_concurrent 1000
+      policy random
+      health_check 5s
+    }
+
+  # Cluster is IPv4-only. Cloudflare returns AAAA-first for many sites
+  # (including torrent indexers) → pods try IPv6 → silent NS_ERROR_UNKNOWN_HOST.
+  # Block AAAA at CoreDNS so all pods get IPv4 transparently.
+  # This is a global drop-in for any IPv4-only homelab cluster.
+  noaaaa.override: |
+    template ANY AAAA . {
+      rcode NOERROR
+      authority "{{ .Name }} 60 IN SOA ns.example.org admin.example.org. 2024010101 7200 3600 604800 60"
+    }
