@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: media-stack
+  namespace: argocd
+spec:
+  goTemplate: false
+  generators:
+    - git:
+        repoURL: git@github.com:rpmwin/homelab.git
+        revision: main
+        directories:
+          - path: k8s/apps/media/*
+          - path: k8s/apps/media/_shared
+            exclude: true
+  template:
+    metadata:
+      name: '{{path.basename}}'
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: media-stack
+    spec:
+      project: default
+      sources:
+        - repoURL: https://bjw-s-labs.github.io/helm-charts
+          chart: app-template
+          targetRevision: 3.6.1
+          helm:
+            releaseName: '{{path.basename}}'
+            valueFiles:
+              - $values/{{path}}/values.yaml
+        - repoURL: git@github.com:rpmwin/homelab.git
+          targetRevision: main
+          ref: values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: media
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

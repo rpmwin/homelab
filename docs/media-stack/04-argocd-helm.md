@@ -15,69 +15,34 @@
 - Supports: Deployment/StatefulSet/DaemonSet, Service, Ingress, PVC, ConfigMap, Secret, ServiceMonitor, init containers, sidecars, persistence with hostPath, custom RBAC.
 - Alternatives rejected: Truecharts (paid SCALE-focused since 2024), k8s-at-home (archived), per-app charts (abandoned).
 
-## ApplicationSet vs per-app Application
+## Pattern: ApplicationSet (chosen)
 
-**Recommend per-app `Application` files** for clarity. ApplicationSet is optional if you want zero-touch on adding apps.
+**One ApplicationSet generates all media app Applications.** Single resource to apply; new apps auto-register when a new subdir is added to the repo.
 
-### Per-app Application (recommended)
-
-```yaml
-# k8s/apps/media/sonarr/application.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: sonarr
-  namespace: argocd
-spec:
-  project: default
-  sources:
-    - repoURL: https://bjw-s-labs.github.io/helm-charts
-      chart: app-template
-      targetRevision: 3.6.1   # pin — check latest stable before applying
-      helm:
-        releaseName: sonarr
-        valueFiles:
-          - $values/k8s/apps/media/sonarr/values.yaml
-    - repoURL: https://github.com/rpmwin/homelab.git   # update to actual repo URL
-      targetRevision: main
-      ref: values
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: media
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
-```
-
-This is the **multi-source** pattern (`sources:` array). It lets `values.yaml` live in *your* repo while the chart comes from bjw-s — clean separation.
-
-### Optional: ApplicationSet
-
-If you want a single file that generates an Application for every subdir under `k8s/apps/media/`:
+File: `k8s/_platform/argocd/media-applicationset.yaml`
 
 ```yaml
-# k8s/apps/media/_shared/argocd-appset.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: media-stack
   namespace: argocd
 spec:
+  goTemplate: false           # use fasttemplate syntax {{path.basename}}
   generators:
     - git:
-        repoURL: https://github.com/rpmwin/homelab.git
+        repoURL: git@github.com:rpmwin/homelab.git
         revision: main
         directories:
           - path: k8s/apps/media/*
-        # exclude _shared
-        # appset filter happens via template
+          - path: k8s/apps/media/_shared
+            exclude: true     # skip the _shared dir
   template:
     metadata:
-      name: '{{path.basename}}'
+      name: '{{path.basename}}'       # → prowlarr, sonarr, radarr, ...
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: media-stack
     spec:
       project: default
       sources:
@@ -87,8 +52,8 @@ spec:
           helm:
             releaseName: '{{path.basename}}'
             valueFiles:
-              - $values/{{path}}/values.yaml
-        - repoURL: https://github.com/rpmwin/homelab.git
+              - $values/{{path}}/values.yaml     # k8s/apps/media/<app>/values.yaml
+        - repoURL: git@github.com:rpmwin/homelab.git
           targetRevision: main
           ref: values
       destination:
@@ -100,9 +65,24 @@ spec:
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
+          - ServerSideApply=true
 ```
 
-Pick one approach; don't mix.
+### How it works
+
+1. ApplicationSet controller polls the repo (~3 min).
+2. The **git directories** generator enumerates subdirs matching `k8s/apps/media/*` (excluding `_shared`). For each found dir, generates one template parameter set with `{{path}}` and `{{path.basename}}`.
+3. The template is rendered once per dir → produces 7 Application CRs.
+4. ArgoCD reconciles each Application as if it were applied manually — pulls bjw-s/app-template + `values.yaml` from this repo, helm-templates, applies to `media` ns.
+
+### Adding / removing apps
+
+- **Add**: `mkdir k8s/apps/media/lidarr && echo "..." > k8s/apps/media/lidarr/values.yaml && git push` → ApplicationSet auto-creates `lidarr` Application within ~3 min.
+- **Remove**: `git rm -r k8s/apps/media/<app> && git push` → ApplicationSet removes the Application; since `prune: true`, all workloads are deleted from cluster too.
+
+### Why no sync waves?
+
+The apps in this stack don't have **runtime** dependencies — only **configuration** dependencies wired via UI later (e.g., Sonarr UI points at Prowlarr URL). All 7 pods can start concurrently. Some Liveness probe failures during initial boot are normal and self-resolve.
 
 ## Namespace
 

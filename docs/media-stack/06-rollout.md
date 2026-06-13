@@ -24,32 +24,37 @@ Follow in order. Each step has a verify command — don't proceed until verify p
 
 ---
 
-## Step 1 — Push repo + apply Application CRDs (CURRENT STEP)
+## Step 1 — Push repo + apply ApplicationSet (CURRENT STEP)
 
-All manifests are written. Push to GitHub so ArgoCD can sync, then register each app in ArgoCD:
+We use an **ApplicationSet** (app-of-apps pattern) — one resource registers all media apps and any future ones added under `k8s/apps/media/*/`.
 
 ```bash
 cd /Users/iamrpm/Developer/projects/homelab
-git add k8s/apps/media k8s/_platform docs/media-stack README.md
-git commit -m "media: add *arr+jellyfin stack (ArgoCD apps, bjw-s/app-template, docs)"
 git push   # confirm with user before running
 
-# Apply namespace first, then all Application CRDs
+# 1. Create media namespace
 kubectl apply -f k8s/apps/media/_shared/namespace.yaml
-kubectl apply -f k8s/apps/media/flaresolverr/application.yaml   # wave 0
-kubectl apply -f k8s/apps/media/prowlarr/application.yaml       # wave 1
-kubectl apply -f k8s/apps/media/qbittorrent/application.yaml    # wave 2
-kubectl apply -f k8s/apps/media/sonarr/application.yaml         # wave 3
-kubectl apply -f k8s/apps/media/radarr/application.yaml         # wave 3
-kubectl apply -f k8s/apps/media/bazarr/application.yaml         # wave 4
-kubectl apply -f k8s/apps/media/jellyfin/application.yaml       # wave 4
 
-# Watch rollout
-kubectl -n argocd get apps -w
+# 2. Apply the ApplicationSet — one-time. Generates Application CRs for every
+#    subdir under k8s/apps/media/ (excluding _shared).
+kubectl apply -f k8s/_platform/argocd/media-applicationset.yaml
+
+# 3. Watch rollout
+kubectl -n argocd get appset media-stack
+kubectl -n argocd get apps -l app.kubernetes.io/part-of=media-stack
 kubectl -n media get pods -w
 ```
 
-**Note**: ArgoCD multi-source Applications require ArgoCD ≥ v2.6. Check: `kubectl -n argocd get deploy argocd-server -o jsonpath='{.spec.template.spec.containers[0].image}'`
+**What happens**: ApplicationSet controller scans the repo, finds 7 subdirs under `k8s/apps/media/*` (skipping `_shared`), generates 7 ArgoCD `Application` CRs (one per dir, named after the dir). Each Application pulls bjw-s/app-template + the matching `values.yaml` from this repo.
+
+**Adding a new app later**: drop a new subdir with `values.yaml` into `k8s/apps/media/`, commit, push. ApplicationSet auto-creates the Application within ~3 min. Zero kubectl.
+
+**Removing an app**: delete its subdir, commit, push. ApplicationSet prunes the Application + its workloads (because syncPolicy has `prune: true`).
+
+**Note**: ApplicationSet + multi-source require ArgoCD ≥ v2.6. Check:
+```bash
+kubectl -n argocd get deploy argocd-server -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
 
 ---
 
