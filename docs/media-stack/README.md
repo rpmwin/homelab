@@ -15,6 +15,9 @@ Self-hosted *arr + Jellyfin media stack on this k3s homelab. Streaming-first.
 | [`06-rollout.md`](06-rollout.md) | Step-by-step execution order. |
 | [`07-verification.md`](07-verification.md) | End-to-end test checklist. |
 | [`08-legal-notes.md`](08-legal-notes.md) | India torrent legal context. |
+| [`09-troubleshooting.md`](09-troubleshooting.md) | Real issues hit during rollout + fixes (DNS, LE certs, Cloudflare). |
+| [`10-app-setup.md`](10-app-setup.md) | UI configuration walkthrough for every app (Prowlarr, qBit, Sonarr, etc.). |
+| [`research-indexers-2026.md`](research-indexers-2026.md) | Curated indexer/proxy research for 2025-2026. |
 
 ## Target architecture (TL;DR)
 
